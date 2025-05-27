@@ -1,210 +1,126 @@
-# 📘 Docker Compose ve Kubernetes Kullanım Kılavuzu
+# Traefik ile Kubernetes Üzerinde WordPress Dağıtımı
 
-Bu rehber, projenin hem Docker Compose hem de Kubernetes ortamında nasıl çalıştırılacağını açıklar. Aşağıda servislerin detaylı açıklaması ve yapılandırma bilgileri yer almaktadır.
+Bu proje, Kubernetes ortamında Traefik ingress controller kullanarak WordPress, MariaDB ve phpMyAdmin servislerinin dağıtımını sağlayan manifest dosyalarını içerir.
 
----
+## 🚀 Proje Özellikleri
 
-## 🐳 Docker Compose Kurulumu
+- **Traefik v2.5** - Modern HTTP ters proxy, yük dengeleyici ve Ingress Controller
+- **MariaDB 10.6** - WordPress için veritabanı çözümü
+- **WordPress** - Popüler içerik yönetim sistemi
+- **phpMyAdmin** - Veritabanı yönetim arayüzü
+- **RBAC** - Rol tabanlı erişim kontrolü
+- **Persistent Storage** - Kalıcı veri depolama çözümleri
 
+## ⚙️ Ön Gereksinimler
+
+1. **Kubernetes Kümesi**:
+   - Minikube, k3s veya bulut sağlayıcı (AWS EKS, Google GKE, Azure AKS)
+   - Minimum kaynak: 2 CPU, 4GB RAM
+
+2. **Araçlar**:
+   - `kubectl` - Kubernetes komut satırı aracı
+   - `helm` (isteğe bağlı) - Paket yöneticisi
+
+3. **Depo Erişimi**:
+   ```bash
+   git clone https://github.com/omandiraci/Traefik-Kubertenes.git
+   cd Traefik-Kubertenes
+   ```
+
+## 🛠️ Kurulum Adımları
+
+### 1. Manifest Dosyasını Uygulama
 ```bash
-# Docker servislerini başlatın
-docker-compose up -d
+kubectl apply -f manifest.yaml
 ```
 
-* Traefik, WordPress, MariaDB ve phpMyAdmin servisleri ayağa kalkar.
-* Traefik Dashboard: `http://localhost:8080`
-* WordPress: `http://localhost:8081/wp`
-* phpMyAdmin: `http://localhost:8082/phpmyadmin`
-
----
-
-## ☸️ Kubernetes Deployments
-
-### Hazırlık
-
-Docker Desktop üzerinde Kubernetes etkinleştirildiğinden emin olun:
-
-* `Settings > Kubernetes > Enable Kubernetes`
-
-### Uygulama
-
+### 2. Dağıtımı Doğrulama
 ```bash
-# Manifest dosyasını apply edin
-kubectl apply -f kubernetes/kubernetes-manifest.yaml
+kubectl get pods -w
 ```
 
-### Servisler
-
-| Servis     | Tip      | Port | Açıklama                      |
-| ---------- | -------- | ---- | ----------------------------- |
-| traefik    | NodePort | 80   | HTTP istekleri                |
-| wordpress  | NodePort | 80   | WordPress arayüzü             |
-| phpmyadmin | NodePort | 80   | phpMyAdmin veritabanı arayüzü |
-
-> Not: Traefik dashboard da 8080 portu üzerinden NodePort olarak expose edilir.
-
----
-
-## 📂 Klasör Yapısı
-
-```
-TraefikProject/
-├── docker-compose.yml
-├── kubernetes/
-│   └── kubernetes-manifest.yaml
-├── README.md
-└── Docker-compose-guide.md
+### 3. Servis Durumunu Kontrol Etme
+```bash
+kubectl get svc
 ```
 
----
+## 📦 Bileşen Detayları
 
-## ⚠️ Güvenlik Uyarısı
-
-* `--api.insecure=true` sadece geliştirme ortamında kullanılmalıdır.
-* Docker soketine verilen erişim yüksek yetki gerektirir. Üretim ortamı için dikkatli olunmalıdır.
-
----
-
-## 🤝 Katkıda Bulunmak
-
-Pull request'ler, hata bildirimleri ve öneriler için GitHub üzerinden katkıda bulunabilirsiniz.
-
----
-
-Happy Deployment! 🚀
-
-# Kubernetes Manifest Yapılandırması
-
-Bu README dosyası, TraefikProject için Kubernetes manifest dosyasının detaylı açıklamasını içerir.
-
-## İçerik
-
-1. [Genel Bakış](#genel-bakış)
-2. [Bileşenler](#bileşenler)
-3. [Kaynak Limitleri](#kaynak-limitleri)
-4. [Erişim Noktaları](#erişim-noktaları)
-5. [Güvenlik](#güvenlik)
-6. [Kurulum](#kurulum)
-
-## Genel Bakış
-
-Bu manifest dosyası, aşağıdaki bileşenleri içeren bir Kubernetes cluster'ı oluşturur:
-- Traefik (API Gateway)
-- MariaDB (Veritabanı)
-- WordPress (Web Uygulaması)
-- phpMyAdmin (Veritabanı Yönetim Aracı)
-
-## Bileşenler
-
-### 1. Traefik (API Gateway)
-- **Versiyon**: v2.5
-- **Replica Sayısı**: 1
+### Traefik Ingress Controller
+- **Versiyon**: 2.5
+- **Portlar**:
+  - `80` HTTP (NodePort: 30080)
+  - `443` HTTPS (NodePort: 30443)
+  - `8080` Dashboard (NodePort: 30081)
 - **Özellikler**:
-  - Dashboard etkin
-  - HTTP (80) ve HTTPS (443) portları
   - Kubernetes Ingress desteği
-  - RBAC (Role-Based Access Control) yapılandırması
-  - ServiceAccount ve ClusterRole tanımları
+  - Canlı yapılandırma güncellemeleri
+  - Otomatik TLS sertifikası yönetimi
 
-### 2. MariaDB (Veritabanı)
+### MariaDB Veritabanı
 - **Versiyon**: 10.6
-- **Replica Sayısı**: 1
-- **Özellikler**:
-  - Persistent Volume kullanımı (1Gi)
-  - Otomatik veritabanı ve kullanıcı oluşturma
-  - WordPress için özel kullanıcı ve veritabanı
-
-### 3. WordPress
-- **Versiyon**: Latest
-- **Replica Sayısı**: 3
-- **Özellikler**:
-  - Persistent Volume kullanımı (1Gi)
-  - MariaDB entegrasyonu
-  - Otomatik yapılandırma
-
-### 4. phpMyAdmin
-- **Versiyon**: Latest
-- **Replica Sayısı**: 3
-- **Özellikler**:
-  - MariaDB entegrasyonu
-  - Root erişimi
-
-## Kaynak Limitleri
-
-### Traefik
-- **CPU Limit**: 500m (0.5 core)
-- **CPU Request**: 100m (0.1 core)
-- **Memory Limit**: 256Mi
-- **Memory Request**: 64Mi
-
-### MariaDB
-- **CPU Limit**: 1000m (1 core)
-- **CPU Request**: 200m (0.2 core)
-- **Memory Limit**: 1Gi
-- **Memory Request**: 256Mi
+- **Konfigürasyon**:
+  - Veritabanı adı: `wordpress_db`
+  - Kullanıcı: `wordpress_user`
+  - Şifre: `wordpress_password`
+  - Root şifre: `root_password`
+- **Depolama**: 1GB kalıcı depolama
 
 ### WordPress
-- **CPU Limit**: 500m (0.5 core)
-- **CPU Request**: 100m (0.1 core)
-- **Memory Limit**: 512Mi
-- **Memory Request**: 128Mi
+- **Versiyon**: En son kararlı sürüm
+- **Bağlantılar**:
+  - MariaDB servisi ile otomatik bağlantı
+- **Depolama**: 1GB kalıcı depolama
+- **Ölçeklendirme**: 3 replica pod
 
 ### phpMyAdmin
-- **CPU Limit**: 200m (0.2 core)
-- **CPU Request**: 50m (0.05 core)
-- **Memory Limit**: 256Mi
-- **Memory Request**: 64Mi
+- **Versiyon**: En son kararlı sürüm
+- **Özellikler**:
+  - MariaDB'ye otomatik bağlanır
+  - Root kullanıcı ile giriş yapılabilir
 
-## Erişim Noktaları
+## 🔍 Servislere Erişim
 
-### Traefik
-- **Dashboard**: NodePort 30081
-- **HTTP**: NodePort 30080
-- **HTTPS**: NodePort 30443
+| Servis       | URL                      | Port  |
+|--------------|--------------------------|-------|
+| Traefik Panosu | http://localhost:30081   | 30081 |
+| WordPress    | http://localhost:30082   | 30082 |
+| phpMyAdmin   | http://localhost:30083   | 30083 |
 
-### WordPress
-- **HTTP**: NodePort 30082
+## ⚠️ Sorun Giderme
 
-### phpMyAdmin
-- **HTTP**: NodePort 30083
-
-## Güvenlik
-
-### Traefik
-- Root olmayan kullanıcı (65532)
-- Salt okunur root dosya sistemi
-- Tüm yetenekler kaldırıldı
-- RBAC ile sınırlı API erişimi
-
-### MariaDB
-- Özel kullanıcı ve veritabanı
-- Güvenli şifre yapılandırması
-
-## Kurulum
-
-1. Manifest dosyasını uygulayın:
+1. **Pod'lar çalışmıyorsa**:
    ```bash
-   kubectl apply -f manifest.yaml
+   kubectl describe pod <pod-adı>
+   kubectl logs <pod-adı>
    ```
 
-2. Pod'ların durumunu kontrol edin:
+2. **Servislere erişilemiyorsa**:
+   - NodePort aralığını kontrol edin
+   - Güvenlik duvarı ayarlarını gözden geçirin
+
+3. **Depolama sorunları**:
    ```bash
-   kubectl get pods
+   kubectl get pvc
+   kubectl get pv
    ```
 
-3. Servisleri kontrol edin:
-   ```bash
-   kubectl get services
-   ```
+## 📝 Yapılandırma Seçenekleri
 
-4. Erişim noktaları:
-   - Traefik Dashboard: http://localhost:30081
-   - WordPress: http://localhost:30082
-   - phpMyAdmin: http://localhost:30083
+`manifest.yaml` dosyasında değiştirilebilecek parametreler:
 
-## Notlar
+1. **Kaynak Limitleri**:
+   - CPU ve bellek sınırları
+   - Replica sayıları
 
-- Tüm servisler NodePort tipinde yapılandırılmıştır
-- Persistent Volume'lar ReadWriteOnce modunda çalışır
-- WordPress ve phpMyAdmin 3 replica ile yüksek erişilebilirlik sağlar
-- Traefik, Kubernetes Ingress controller olarak çalışır
+2. **Veritabanı Ayarları**:
+   - Kullanıcı adı/şifre
+   - Veritabanı adı
+
+3. **Ağ Ayarları**:
+   - NodePort değerleri
+   - Ingress kuralları
+
+## 📜 Lisans
+
+Bu proje [MIT Lisansı](LICENSE) ile lisanslanmıştır.
